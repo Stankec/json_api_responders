@@ -1,4 +1,5 @@
 require 'json_api_responders/version'
+require 'json_api_responders/engine'
 require 'json_api_responders/errors'
 require 'json_api_responders/responder'
 
@@ -25,12 +26,12 @@ module JsonApiResponders
 
   private
 
-  def respond_with_error(error_type)
+  def respond_with_error(error_type, resource = nil)
     case error_type
     when :unauthorized
       Responder.new(nil, controller: self, status: :forbidden).unauthorized
     when :not_found
-      Responder.new(nil, controller: self, status: :not_found).not_found
+      Responder.new(resource, controller: self, status: :not_found).not_found
     end
   end
 
@@ -45,8 +46,8 @@ module JsonApiResponders
     Responder.new(resource, options).respond!
   end
 
-  def record_not_found!
-    respond_with_error(:not_found)
+  def record_not_found!(error)
+    respond_with_error(:not_found, error)
   end
 
   def deserialized_params
