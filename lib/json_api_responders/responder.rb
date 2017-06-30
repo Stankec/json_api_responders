@@ -28,29 +28,15 @@ module JsonApiResponders
 
     def not_found
       self.errors = {
-        errors: [
-          {
-            title: I18n.t('json_api.errors.not_found.title'),
-            detail: I18n.t('json_api.errors.not_found.detail'),
-            status: status_code
-          }
-        ]
+        reason: I18n.t('json_api.errors.not_found.reason')
       }
-
       render_error
     end
 
     def unauthorized
       self.errors = {
-        errors: [
-          {
-            title: I18n.t('json_api.errors.unauthorized.title'),
-            detail: I18n.t('json_api.errors.unauthorized.detail'),
-            status: status_code
-          }
-        ]
+        reason: I18n.t('json_api.errors.unauthorized.reason')
       }
-
       render_error
     end
 
@@ -79,7 +65,14 @@ module JsonApiResponders
 
     def error_render_options
       render_options.merge(
-        json: error_response
+        json: {
+          status: status_code,
+          message: general_error_message
+        }.tap do |added_errors|
+          added_errors[:errors] = error_response unless errors
+          added_errors[:resource] = resource.model if errors
+          added_errors[:message] = errors[:reason] if errors
+        end
       )
     end
 
@@ -91,24 +84,24 @@ module JsonApiResponders
     end
 
     def error_response
-      return errors if errors
-
-      errors ||= {}
-      errors[:errors] ||= []
-
-      resource.errors.each do |attribute, message|
-        errors[:errors] << {
-          title: message,
-          detail: resource.errors.full_message(attribute, message),
-          status: status_code.to_s,
-          source: {
-            parameter: attribute,
-            pointer: "data/attributes/#{attribute}"
-          }
+      return if errors
+      resource.errors.inject([]) do |new_errors, (attribute, message)|
+        new_errors << {
+          resource: resource_name.titleize,
+          field: attribute,
+          reason: message,
+          detail: resource.errors.full_message(attribute, message)
         }
       end
+    end
 
-      errors
+    def resource_name
+      return resource.object.class.name if resource.respond_to?(:decorated?)
+      resource.class.name
+    end
+
+    def general_error_message
+      I18n.t('json_api.errors.conflict.reason')
     end
   end
 end
