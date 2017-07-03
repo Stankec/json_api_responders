@@ -46,9 +46,11 @@ module JsonApiResponders
         serializer_key = relation? ? :each_serializer : :serializer
 
         render_options.merge(
-          json: resource,
-          serializer_key => serializer_class
-        )
+          json: resource
+        ).tap do |extra_options|
+          extra_options[serializer_key] = serializer_class if
+            responder_type_eql?(:serializer)
+        end
       end
 
       def serializer_class
@@ -66,6 +68,10 @@ module JsonApiResponders
 
       def relation?
         resource.is_a?(ActiveRecord::Relation)
+      end
+
+      def responder_type_eql?(type)
+        JsonApiResponders.configuration.default_responder_type.eql?(type)
       end
     end
   end
