@@ -1,6 +1,7 @@
 require 'json_api_responders/version'
 require 'json_api_responders/errors'
 require 'json_api_responders/responder'
+require 'json_api_responders/configuration'
 
 module JsonApiResponders
   def self.included(base)
